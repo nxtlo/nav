@@ -6,6 +6,9 @@ use std::{
     sync::Arc,
 };
 
+pub use serenity::framework::standard::macros::*;
+use serenity::{framework::standard::*, model::id::UserId};
+use serenity::framework::standard::help_commands::with_embeds;
 use serenity::{
     async_trait,
     client::bridge::gateway::ShardManager,
@@ -63,6 +66,19 @@ impl EventHandler for Handler {
 #[commands(ping, info, avatar)]
 struct Meta;
 
+#[help]
+async fn my_help(
+    ctx: &Context,
+    msg: &Message,
+    args: Args,
+    help_options: &'static HelpOptions,
+    groups: &[&'static CommandGroup],
+    owners: HashSet<UserId>,
+) -> CommandResult {
+    let _ = with_embeds(ctx, msg, args, help_options, groups, owners).await;
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() {
 
@@ -97,7 +113,8 @@ async fn main() {
         .configure(|c| c
                    .owners(owner)
                    .prefix(&prefix))
-        .group(&META_GROUP);
+        .group(&META_GROUP)
+        .help(&MY_HELP);
 
         let mut client = Client::builder(&token)
             .framework(framework)
