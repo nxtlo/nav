@@ -60,7 +60,7 @@ impl EventHandler for Handler {
 }
 
 #[group]
-#[commands(ping, info)]
+#[commands(ping, info, avatar)]
 struct Meta;
 
 #[tokio::main]
