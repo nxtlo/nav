@@ -1,13 +1,13 @@
 mod commands;
 
-use std::{
-    collections::HashSet,
-    env,
-    sync::Arc,
-};
+use std::{collections::{HashMap, HashSet}, env, sync::Arc};
 
 pub use serenity::framework::standard::macros::*;
-use serenity::{framework::standard::*, model::id::UserId};
+
+use serenity::{
+    framework::standard::*, model::id::UserId}
+    ;
+
 use serenity::framework::standard::help_commands::with_embeds;
 use serenity::{
     async_trait,
@@ -15,6 +15,7 @@ use serenity::{
     framework::{
         StandardFramework,
         standard::macros::group,
+    
     },
     http::Http,
     model::{
@@ -23,7 +24,7 @@ use serenity::{
         event:: ResumedEvent, gateway::Ready},
     prelude::*,
 };
-
+use tokio::sync::Mutex;
 use tracing::{error, info};
 use tracing_subscriber::{
     FmtSubscriber,
@@ -32,9 +33,15 @@ use tracing_subscriber::{
 
 use commands::{
     meta::*,
+    dev::*,
 };
 
+struct CommandCounter;
 pub struct ShardManagerContainer;
+
+impl TypeMapKey for CommandCounter {
+    type Value = HashMap<String, u64>;
+}
 
 impl TypeMapKey for ShardManagerContainer {
     type Value = Arc<Mutex<ShardManager>>;
@@ -61,12 +68,20 @@ impl EventHandler for Handler {
         }
     }
 }
-
 #[group]
+#[summary = "Meta commands for the bot."]
 #[commands(ping, info, avatar)]
 struct Meta;
 
+
+#[group]
+#[owners_only]
+#[summary = "Commands for devs"]
+#[commands(own)]
+struct Dev;
+
 #[help]
+#[lacking_permissions = "Hide"]
 async fn my_help(
     ctx: &Context,
     msg: &Message,
@@ -111,9 +126,12 @@ async fn main() {
 
     let framework = StandardFramework::new()
         .configure(|c| c
+                    .with_whitespace(true)
+                    .on_mention(Some(_bot_id))
                    .owners(owner)
                    .prefix(&prefix))
         .group(&META_GROUP)
+        .group(&DEV_GROUP)
         .help(&MY_HELP);
 
         let mut client = Client::builder(&token)
