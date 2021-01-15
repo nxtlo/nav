@@ -1,17 +1,17 @@
 mod commands;
+mod public;
 
-use std::{collections::{HashMap, HashSet}, env, sync::Arc};
+use std::{collections::{HashMap, HashSet}, env, error::Error, sync::Arc};
+// use public::DatabasePool;
+//use sqlx::postgres::PgPoolOptions;
 
+// Serenity stuff
 pub use serenity::framework::standard::macros::*;
-
-use serenity::{
-    framework::standard::*, model::id::UserId}
-    ;
-
+use serenity::{framework::standard::*, model::id::UserId};
 use serenity::framework::standard::help_commands::with_embeds;
 use serenity::{
     async_trait,
-    client::bridge::gateway::ShardManager,
+    client::bridge::gateway::{ShardManager, GatewayIntents},
     framework::{
         StandardFramework,
         standard::macros::group,
@@ -22,8 +22,10 @@ use serenity::{
         id::GuildId,
         channel::Message,
         event:: ResumedEvent, gateway::Ready},
-    prelude::*,
+    prelude::{TypeMapKey, Context, EventHandler, Client},
 };
+
+
 use tokio::sync::Mutex;
 use tracing::{error, info};
 use tracing_subscriber::{
@@ -94,8 +96,10 @@ async fn my_help(
     Ok(())
 }
 
+// 
+
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
     dotenv::dotenv().expect(".env file was not found.");
 
@@ -137,13 +141,24 @@ async fn main() {
         let mut client = Client::builder(&token)
             .framework(framework)
             .event_handler(Handler)
+            .intents({
+                let mut intents = GatewayIntents::all();
+                intents.remove(GatewayIntents::DIRECT_MESSAGE_TYPING);
+                intents.remove(GatewayIntents::GUILD_MESSAGE_TYPING);
+                intents
+            })
             .await
             .expect("Err creating client");
 
-    {
+    {   // let dsn = env::var("DSN_URL")?;
         let mut data = client.data.write().await;
-        data.insert::<ShardManagerContainer>(client.shard_manager.clone());
+        //let pool = PgPoolOptions::new().max_connections(20).connect(&dsn).await?;
+        
+       //data.insert::<DatabasePool>(pool);
+        data.insert::<ShardManagerContainer>(Arc::clone(&client.shard_manager));
     }
+
+
 
     let shard_manager = client.shard_manager.clone();
 
@@ -155,4 +170,6 @@ async fn main() {
     if let Err(why) = client.start().await {
         error!("Client err: {:?}", why);
     }
+
+    Ok(())
 }

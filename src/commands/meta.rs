@@ -34,12 +34,13 @@ async fn info(ctx: &Context, msg: &Message) -> CommandResult {
             e.field("BOT:", format!("Name: {}\nID: {}\nDiscriminator: {}", bot.name, bot.id, bot.discriminator), true);
             e.field("Created at:", user_id, false);
             e.field("Cache:", format!("Users: {}\nShards: {}\nGuilds: {}\nUnCached users: {}", cached_users, shard_count, cached_guilds, unknown_users), true);
+            
             if let Some(i) = bot_icon {
                 e.thumbnail(i);
             }
             e
         });
-        
+
         m
     }).await?;
     
