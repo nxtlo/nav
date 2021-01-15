@@ -11,20 +11,21 @@ dotenv = "0.15"
 http = "0.2"
 anyhow = "1.0" # For error handling
 async-std = { version = "1.7.0", features = ["attributes"] }
-# sqlx = { version = "0.4.2", features = ["macros", "postgres", "uuid", "offline", "chrono", "runtime-tokio-native-tls"] }
 futures = "0.3"
 tracing-log = "0.1"
 tracing-subscriber = "0.2"
 tracing = "0.1"
-tokio = { version = "1.0", features = ["full"] }
+tokio = { version = "0.2", features = ["full"] }
 
 
 [dependencies.sqlx]
+branch = "master"
 git = "https://github.com/launchbadge/sqlx"
 default-features = false
-features = ["macros", "postgres", "uuid", "offline", "chrono", "runtime-tokio-native-tls"]
+features = ["macros", "postgres", "uuid", "offline", "chrono", "runtime-tokio-rustls"]
 
 [dependencies.serenity]
-version = "0.10"
+git = "https://github.com/serenity-rs/serenity"
+branch = "current"
 default-features = false
-features = ["builder", "cache", "client", "framework", "gateway", "http", "model", "standard_framework", "utils", "rustls_backend", "absolute_ratelimits", "collector", "voice"]
+features = ["builder", "cache", "client", "framework", "gateway", "http", "model", "standard_framework", "utils", "rustls_tokio_0_2_backend", "absolute_ratelimits", "collector", "voice"]

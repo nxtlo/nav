@@ -1,9 +1,12 @@
 mod commands;
 mod public;
 
-use std::{collections::{HashMap, HashSet}, env, error::Error, sync::Arc};
-// use public::DatabasePool;
-//use sqlx::postgres::PgPoolOptions;
+use std::{collections::{
+    HashMap, HashSet
+    },
+    env, error::Error, sync::Arc};
+use public::DatabasePool;
+use sqlx::postgres::PgPoolOptions;
 
 // Serenity stuff
 pub use serenity::framework::standard::macros::*;
@@ -24,7 +27,6 @@ use serenity::{
         event:: ResumedEvent, gateway::Ready},
     prelude::{TypeMapKey, Context, EventHandler, Client},
 };
-
 
 use tokio::sync::Mutex;
 use tracing::{error, info};
@@ -117,6 +119,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         .expect("Prefix was not found in .env");
 
     let http = Http::new_with_token(&token);
+    let dsn = env::var("DATABASE_URL")?;
 
     let (owner, _bot_id) = match http.get_current_application_info().await {
         Ok(info) => {
@@ -150,11 +153,11 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             .await
             .expect("Err creating client");
 
-    {   // let dsn = env::var("DSN_URL")?;
+    {
         let mut data = client.data.write().await;
-        //let pool = PgPoolOptions::new().max_connections(20).connect(&dsn).await?;
-        
-       //data.insert::<DatabasePool>(pool);
+        let pool = PgPoolOptions::new().max_connections(20).connect(&dsn).await?;
+
+        data.insert::<DatabasePool>(pool);
         data.insert::<ShardManagerContainer>(Arc::clone(&client.shard_manager));
     }
 
@@ -170,6 +173,6 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     if let Err(why) = client.start().await {
         error!("Client err: {:?}", why);
     }
-
+    println!("{}", &dsn);
     Ok(())
 }
