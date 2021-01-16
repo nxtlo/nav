@@ -72,9 +72,18 @@ impl EventHandler for Handler {
         }
     }
 }
+
+#[hook]
+async fn unknown_command(_ctx: &Context, _msg: &Message, unknown_command_name: &str) {
+    _msg.reply(_ctx,format!("Could not find command named '{}'", unknown_command_name))
+    .await
+    .expect("None");
+}
+
+
 #[group]
 #[summary = "Meta commands for the bot."]
-#[commands(ping, info, avatar)]
+#[commands(ping, info, avatar, serverinfo)]
 struct Meta;
 
 
@@ -145,9 +154,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             .framework(framework)
             .event_handler(Handler)
             .intents({
-                let mut intents = GatewayIntents::all();
-                intents.remove(GatewayIntents::DIRECT_MESSAGE_TYPING);
-                intents.remove(GatewayIntents::GUILD_MESSAGE_TYPING);
+                let intents = GatewayIntents::all();
                 intents
             })
             .await

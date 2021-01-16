@@ -1,4 +1,4 @@
-use serenity::prelude::*;
+use serenity::{prelude::*};
 use serenity::model::id::*;
 use serenity::model::prelude::*;
 use serenity::framework::standard::{
@@ -62,6 +62,43 @@ async fn avatar(ctx: &Context, msg: &Message) -> CommandResult {
                 e.image(ava);
             }
             e
+        });
+
+        m
+    }).await?;
+
+    Ok(())
+}
+
+#[command]
+#[only_in(guilds)]
+#[aliases ("si")]
+#[description("Info about the current guild.")]
+async fn serverinfo(ctx: &Context, msg: &Message) -> CommandResult {
+
+    let stuff = &msg.guild_id.unwrap();
+    let guild = &ctx.cache.guild(stuff).await;
+
+    msg.channel_id.send_message(ctx, |m|{
+        m.embed(|e|{
+
+            if let Some(x) = guild {
+                e.field("ID", x.id, false);
+                e.field("Name", format!("{}", x.name), false);
+                e.field("Members", format!("{}", x.member_count), false);
+                e.field("Region", format!("{}", x.region), false);
+                e.field("Owner ID", format!("{}", x.owner_id), false);
+                e.field("Boosters", format!("{}", x.premium_subscription_count), false);
+                e.field("Features", format!("{:?}", x.features), true);
+
+                if let Some(ava) = guild {
+                    e.thumbnail(ava.icon_url().unwrap());
+                }
+            
+            }
+
+            e
+
         });
 
         m
