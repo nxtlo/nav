@@ -1,11 +1,10 @@
-use serenity::{prelude::*};
+use serenity::{framework::standard::Args, prelude::*};
 use serenity::model::id::*;
 use serenity::model::prelude::*;
 use serenity::framework::standard::{
     CommandResult,
     macros::command,
 };
-
 
 
 #[command]
@@ -49,23 +48,28 @@ async fn info(ctx: &Context, msg: &Message) -> CommandResult {
 
 
 #[command]
-async fn avatar(ctx: &Context, msg: &Message) -> CommandResult {
+async fn avatar(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+    
     let name = &msg.author.name;
-    let avatar = &msg.author.avatar_url();
-    msg.channel_id.send_message(ctx, |m|{
-        m.embed(|e|{
+    let avatar = &msg.author.avatar_url().clone();
 
-            e.color(0x7bcde8);
-            e.title(format!("{}", name));
-            
-            if let Some(ava) = avatar {
-                e.image(ava);
-            }
-            e
-        });
-
-        m
-    }).await?;
+    if args.is_empty() {
+        msg.channel_id.send_message(ctx, |m|{
+            m.embed(|e|{
+    
+                e.color(0x7bcde8);
+                e.title(format!("{}", name));
+                
+                if let Some(ava) = avatar {
+                    e.image(ava);
+                }
+                e
+            });
+    
+            m
+        }).await?;
+    
+    }
 
     Ok(())
 }
@@ -76,7 +80,7 @@ async fn avatar(ctx: &Context, msg: &Message) -> CommandResult {
 #[description("Info about the current guild.")]
 async fn serverinfo(ctx: &Context, msg: &Message) -> CommandResult {
 
-    let stuff = &msg.guild_id.unwrap();
+    let stuff = &msg.guild_id.unwrap().clone();
     let guild = &ctx.cache.guild(stuff).await;
 
     msg.channel_id.send_message(ctx, |m|{

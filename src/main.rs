@@ -38,6 +38,7 @@ use tracing_subscriber::{
 use commands::{
     meta::*,
     dev::*,
+    config::*,
 };
 
 struct CommandCounter;
@@ -80,6 +81,55 @@ async fn unknown_command(_ctx: &Context, _msg: &Message, unknown_command_name: &
     .expect("None");
 }
 
+// credits to nitsu for this :>
+#[hook]
+async fn dynamic_prefix(ctx: &Context, msg: &Message) -> Option<String> {
+
+    // Custom per guild prefixes.
+    //info!("Dynamic prefix call.");
+    // obtain the guild id of the command message.
+    let guild_id = &msg.guild_id;
+
+    let p;
+
+    // If the command was invoked on a guild
+    if let Some(id) = guild_id {
+        // Get the real guild id, and the i64 type becaues that's what postgre uses.
+        let gid = id.0 as i64;
+        let pool = {
+            // Open the context data lock in read mode.
+            let data = ctx.data.read().await;
+            // it's safe to clone PgPool
+            data.get::<DatabasePool>().unwrap().clone()
+        };
+
+        // Obtain the database connection for the data.
+        // Obtain the configured prefix from the database
+        match sqlx::query!("SELECT prefix FROM guilds WHERE id = $1", gid)
+            .fetch_optional(&pool)
+            .await
+        {
+            Err(why) => {
+                error!("Could not query database: {}", why);
+                p = ".".to_string();
+            }
+            Ok(db_prefix) => {
+                p = if let Some(result) = db_prefix {
+                    result.prefix.unwrap_or(".".to_string()).to_string()
+                } else {
+                    ".".to_string()
+                };
+            }
+        }
+
+    // If the command was invoked on a dm
+    } else {
+        p = ".".to_string();
+    };
+
+    // dynamic_prefix() needs an Option<String>
+    Some(p)
+}
 
 #[group]
 #[summary = "Meta commands for the bot."]
@@ -93,8 +143,16 @@ struct Meta;
 #[commands(own)]
 struct Dev;
 
+
+#[group]
+#[summary = "Commands for the bot Config"]
+#[commands(prefix)]
+struct Config;
+
 #[help]
+#[lacking_role = "Hide"]
 #[lacking_permissions = "Hide"]
+#[group_prefix = "Prefix commands"]
 async fn my_help(
     ctx: &Context,
     msg: &Message,
@@ -124,8 +182,6 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     let token = env::var("BOT_TOKEN")
         .expect("Token was not found in .env.");
 
-    let prefix = env::var("PREFIX")
-        .expect("Prefix was not found in .env");
 
     let http = Http::new_with_token(&token);
     let dsn = env::var("DATABASE_URL")?;
@@ -141,13 +197,17 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     };
 
     let framework = StandardFramework::new()
-        .configure(|c| c
-                    .with_whitespace(true)
-                    .on_mention(Some(_bot_id))
-                   .owners(owner)
-                   .prefix(&prefix))
+        .configure(|c| {
+            c.prefix("")
+                .on_mention(Some(_bot_id))
+                .dynamic_prefix(dynamic_prefix)
+                .with_whitespace(true)
+                .owners(owner)
+                .case_insensitivity(true)
+        })
         .group(&META_GROUP)
         .group(&DEV_GROUP)
+        .group(&CONFIG_GROUP)
         .help(&MY_HELP);
 
         let mut client = Client::builder(&token)
