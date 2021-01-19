@@ -39,6 +39,7 @@ use commands::{
     meta::*,
     dev::*,
     config::*,
+    tags::*,
 };
 
 struct CommandCounter;
@@ -136,7 +137,6 @@ async fn dynamic_prefix(ctx: &Context, msg: &Message) -> Option<String> {
 #[commands(ping, info, avatar, serverinfo)]
 struct Meta;
 
-
 #[group]
 #[owners_only]
 #[summary = "Commands for devs"]
@@ -148,6 +148,11 @@ struct Dev;
 #[summary = "Commands for the bot Config"]
 #[commands(prefix)]
 struct Config;
+
+#[group]
+#[summary = "Commands related to tags."]
+#[commands(tag)]
+struct Tags;
 
 #[help]
 #[lacking_role = "Hide"]
@@ -208,6 +213,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         .group(&META_GROUP)
         .group(&DEV_GROUP)
         .group(&CONFIG_GROUP)
+        .group(&TAGS_GROUP)
         .help(&MY_HELP);
 
         let mut client = Client::builder(&token)
